@@ -125,10 +125,21 @@
           "PlutusCore/Default/Universe"
           "PlutusCore/Eq"
           "PlutusCore/Evaluation/Machine/ExBudgetingDefaults"
+<<<<<<< HEAD
           "PlutusCore/Lexer/Type"
+=======
+          "PlutusCore/Generators/Internal/Denotation"
+          "PlutusCore/Generators/Internal/Dependent"
+          "PlutusCore/Generators/Internal/Entity"
+          "PlutusCore/Generators/Internal/TypeEvalCheck"
+          "PlutusCore/Generators/Internal/TypedBuiltinGen"
+          "PlutusCore/Generators/Internal/Utils"
+>>>>>>> 8530bf931 (Re-organzie dirs/files.)
           "PlutusCore/Parsable"
           "PlutusCore/Parser/Internal"
-          "PlutusCore/ParserCommon"
+          "PlutusCore/Parser/Lexer"
+          "PlutusCore/Parser/Type"
+          "PlutusCore/Parser/ParserCommon"
           "PlutusCore/Pretty/Classic"
           "PlutusCore/Pretty/ConfigName"
           "PlutusCore/Pretty/Default"
