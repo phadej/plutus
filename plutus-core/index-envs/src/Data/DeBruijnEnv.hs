@@ -1,5 +1,9 @@
 {-# LANGUAGE TypeFamilies #-}
-module Data.DeBruijnEnv (DeBruijnEnv (..), RelativizedMap (..)) where
+module Data.DeBruijnEnv
+    ( DeBruijnEnv (..)
+    , BRAL.RAList (..)
+    , RelativizedMap (..)
+    ) where
 
 import Data.IntMap.Strict qualified as IM
 import Data.Kind
@@ -33,12 +37,13 @@ instance DeBruijnEnv (BRAL.RAList a) where
     {-# INLINABLE cons #-}
     cons = BRAL.Cons
     {-# INLINABLE index #-}
-    index = BRAL.safeIndex
+    index = BRAL.safeIndexOne
     {-# INLINABLE unsafeIndex #-}
-    unsafeIndex = BRAL.index
+    unsafeIndex = BRAL.indexOne
 
 -- | A sequence implemented by a map from "levels" to values and a counter giving the "current" level.
-data RelativizedMap a = RelativizedMap (IM.IntMap a) {-# UNPACK #-} !Int
+data RelativizedMap a = RelativizedMap (IM.IntMap a) {-# UNPACK #-} !Word
+    deriving Show
 
 instance DeBruijnEnv (RelativizedMap a) where
     type Element (RelativizedMap a) = a
@@ -46,9 +51,9 @@ instance DeBruijnEnv (RelativizedMap a) where
     {-# INLINABLE empty #-}
     empty = RelativizedMap mempty 0
     {-# INLINABLE cons #-}
-    cons a (RelativizedMap im l) = RelativizedMap (IM.insert l a im) (l+1)
+    cons a (RelativizedMap im l) = RelativizedMap (IM.insert (fromIntegral l) a im) (l+1)
     {-# INLINABLE index #-}
-    index (RelativizedMap im l) w = IM.lookup (l - fromIntegral w) im
+    index (RelativizedMap im l) w = IM.lookup (fromIntegral l - fromIntegral w) im
 
 instance DeBruijnEnv (RAL.RAList  a) where
     type Element (RAL.RAList a) = a

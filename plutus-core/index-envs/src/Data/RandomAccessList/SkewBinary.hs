@@ -3,14 +3,17 @@
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE TypeFamilies    #-}
 {-# LANGUAGE ViewPatterns    #-}
-module Data.RandomAccessList.SkewBinary ( RAList(Cons,Nil)
-                 , index
-                 , safeIndex
-                 , Data.RandomAccessList.SkewBinary.null
-                 , Data.RandomAccessList.SkewBinary.head
-                 , Data.RandomAccessList.SkewBinary.tail
-                 , uncons
-                 ) where
+module Data.RandomAccessList.SkewBinary
+    ( RAList(Cons,Nil)
+    , indexZero
+    , safeIndexZero
+    , indexOne
+    , safeIndexOne
+    , Data.RandomAccessList.SkewBinary.null
+    , Data.RandomAccessList.SkewBinary.head
+    , Data.RandomAccessList.SkewBinary.tail
+    , uncons
+    ) where
 
 import Data.Bits (unsafeShiftR)
 import Data.List qualified as List (unfoldr)
@@ -62,7 +65,6 @@ cons x = \case
     (BHead w1 t1 (BHead w2 t2 ts')) | w1 == w2 -> BHead (2*w1+1) (Node x t1 t2) ts'
     ts                                         -> BHead 1 (Leaf x) ts
 
-
 -- /O(1)/
 uncons :: RAList a -> Maybe (a, RAList a)
 uncons = \case
@@ -71,7 +73,7 @@ uncons = \case
         -- probably faster than `div w 2`
         let halfSize = unsafeShiftR treeSize 1
             -- split the node in two)
-        in Just ( x, BHead halfSize t1 $ BHead halfSize t2 ts)
+        in Just (x, BHead halfSize t1 $ BHead halfSize t2 ts)
     Nil -> Nothing
 
 {-# INLINABLE head #-}
@@ -85,36 +87,79 @@ tail :: RAList a -> RAList a
 tail = snd. fromMaybe (error "empty RAList") . uncons
 
 -- 0-based
-index :: RAList a -> Word -> a
-index Nil _  = error "out of bounds"
-index (BHead w t ts) !i  =
+indexZero :: RAList a -> Word -> a
+indexZero Nil _  = error "out of bounds"
+indexZero (BHead w t ts) !i  =
     if i < w
     then indexTree w i t
-    else index ts (i-w)
+    else indexZero ts (i-w)
   where
     indexTree :: Word -> Word -> Tree a -> a
     indexTree 1 0 (Leaf x) = x
     indexTree _ _ (Leaf _) = error "out of bounds"
     indexTree _ 0 (Node x _ _) = x
-    indexTree treeSize offset (Node _ t1 t2 ) =
+    indexTree treeSize offset (Node _ t1 t2) =
         let halfSize = unsafeShiftR treeSize 1 -- probably faster than `div w 2`
         in if offset <= halfSize
            then indexTree halfSize (offset - 1) t1
            else indexTree halfSize (offset - 1 - halfSize) t2
 
-safeIndex :: RAList a -> Word -> Maybe a
-safeIndex Nil _  = Nothing
-safeIndex (BHead w t ts) !i  =
+-- 0-based
+safeIndexZero :: RAList a -> Word -> Maybe a
+safeIndexZero Nil _  = Nothing
+safeIndexZero (BHead w t ts) !i  =
     if i < w
     then indexTree w i t
-    else safeIndex ts (i-w)
+    else safeIndexZero ts (i-w)
   where
     indexTree :: Word -> Word -> Tree a -> Maybe a
     indexTree 1 0 (Leaf x) = Just x
     indexTree _ _ (Leaf _) = Nothing
     indexTree _ 0 (Node x _ _) = Just x
-    indexTree treeSize offset (Node _ t1 t2 ) =
+    indexTree treeSize offset (Node _ t1 t2) =
         let halfSize = unsafeShiftR treeSize 1 -- probably faster than `div w 2`
         in if offset <= halfSize
            then indexTree halfSize (offset - 1) t1
            else indexTree halfSize (offset - 1 - halfSize) t2
+
+-- 1-based
+-- NOTE: no check if zero 0 index is passed, if 0 is passed it MAY overflow the index
+indexOne :: RAList a -> Word -> a
+indexOne Nil _ = error "out of bounds"
+indexOne (BHead w t ts) !i =
+    if i <= w
+    then indexTree w i t
+    else indexOne ts (i-w)
+  where
+    indexTree :: Word -> Word -> Tree a -> a
+    indexTree 1 1 (Leaf x) = x
+    indexTree _ _ (Leaf _) = error "out of bounds"
+    indexTree _ 1 (Node x _ _) = x
+    indexTree treeSize offset (Node _ t1 t2) =
+        let halfSize = unsafeShiftR treeSize 1 -- probably faster than `div w 2`
+            offset' = offset - 1
+        in if offset' <= halfSize
+           then indexTree halfSize offset' t1
+           else indexTree halfSize (offset' - halfSize) t2
+
+-- 1-based
+-- NOTE: no check if zero 0 index is passed, if 0 is passed it MAY overflow the index
+safeIndexOne :: RAList a -> Word -> Maybe a
+safeIndexOne Nil _ = Nothing
+safeIndexOne (BHead w t ts) !i =
+    if i <= w
+    then indexTree w i t
+    else safeIndexOne ts (i-w)
+  where
+    indexTree :: Word -> Word -> Tree a -> Maybe a
+    indexTree 1 1 (Leaf x) = Just x
+    indexTree _ _ (Leaf _) = Nothing
+    indexTree _ 1 (Node x _ _) = Just x
+    indexTree treeSize offset (Node _ t1 t2) =
+        let halfSize = unsafeShiftR treeSize 1 -- probably faster than `div w 2`
+            offset' = offset - 1
+        in if offset' <= halfSize
+           then indexTree halfSize offset' t1
+           else indexTree halfSize (offset' - halfSize) t2
+
+
