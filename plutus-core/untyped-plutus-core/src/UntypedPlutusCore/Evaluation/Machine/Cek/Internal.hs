@@ -205,7 +205,7 @@ data CekValue uni fun =
       !(BuiltinRuntime (CekValue uni fun))  -- The partial application and its costing function.
                                             -- Check the docs of 'BuiltinRuntime' for details.
   | VProd {-# UNPACK #-} !(V.Vector (CekValue uni fun))
-  | VTag {-# UNPACK #-} !Int !(CekValue uni fun)
+  | VTag {-# UNPACK #-} !Int !(Term Name uni fun ()) !(CekValEnv uni fun)
     deriving (Show)
 
 type CekValEnv uni fun = UniqueMap TermUnique (CekValue uni fun)
@@ -459,7 +459,7 @@ dischargeCekValue = \case
     -- or (b) it's needed for an error message.
     VBuiltin _ term env _  -> dischargeCekValEnv env term
     VProd es               -> Prod () (toList $ fmap dischargeCekValue es)
-    VTag i e               -> Tag () i (dischargeCekValue e)
+    VTag i term env        -> Tag () i (dischargeCekValEnv env term)
 
 instance (Closed uni, GShow uni, uni `Everywhere` PrettyConst, Pretty fun) =>
             PrettyBy PrettyConfigPlc (CekValue uni fun) where
@@ -504,8 +504,7 @@ data Context uni fun s
     | FrameForce !(Context uni fun s)                                               -- ^ @(force _)@
     | FrameProd !(CekValEnv uni fun) {-# UNPACK #-} !(Accumulator (Term Name uni fun ()) (CekValue uni fun) s) !(Context uni fun s)
     | FrameProj {-# UNPACK #-} !Int !(Context uni fun s)
-    | FrameTag {-# UNPACK #-} !Int !(Context uni fun s)
-    | FrameCases !(CekValEnv uni fun) {-# UNPACK #-} !(Accumulator (Term Name uni fun ()) (CekValue uni fun) s) !(Context uni fun s)
+    | FrameCases !(CekValEnv uni fun) ![(Term Name uni fun ())] !(Context uni fun s)
     | NoFrame
     --deriving (Show)
 
@@ -641,13 +640,10 @@ enterComputeCek = computeCek (toWordArray 0) where
         computeCek unbudgetedSteps' (FrameProj i ctx) env t
     computeCek !unbudgetedSteps !ctx !env (Tag _ i t) = do
         !unbudgetedSteps' <- stepAndMaybeSpend BApply unbudgetedSteps
-        computeCek unbudgetedSteps' (FrameTag i ctx) env t
+        returnCek unbudgetedSteps' ctx (VTag i t env)
     computeCek !unbudgetedSteps !ctx !env (Case _ arg cs) = do
         !unbudgetedSteps' <- stepAndMaybeSpend BApply unbudgetedSteps
-        acc <- CekM $ newAccumulator (arg:cs)
-        case acc of
-            Left res        -> returnCek unbudgetedSteps ctx $ VProd res
-            Right (t, acc') -> computeCek unbudgetedSteps' (FrameCases env acc' ctx) env t
+        computeCek unbudgetedSteps' (FrameCases env cs ctx) env arg
 
     {- | The returning phase of the CEK machine.
     Returns 'EvaluationSuccess' in case the context is empty, otherwise pops up one frame
@@ -688,17 +684,12 @@ enterComputeCek = computeCek (toWordArray 0) where
             Just e  -> returnCek unbudgetedSteps ctx e
             Nothing -> throwingWithCause _MachineError (ProductIndexOutOfBoundsMachineError i) Nothing
         _ -> throwingWithCause _MachineError NonProductIndexedMachineError Nothing
-    returnCek !unbudgetedSteps (FrameTag i ctx) e = returnCek unbudgetedSteps ctx (VTag i e)
-    returnCek !unbudgetedSteps (FrameCases env acc ctx) e = do
-        r <- CekM $ stepAccumulator acc e
-        case r of
-            Right (next, acc') -> computeCek unbudgetedSteps (FrameCases env acc' ctx) env next
-            Left done -> case done ^? ix 0 of
-                Just (VTag i arg) -> case done ^? ix (i+1) of
-                    Just fun -> applyEvaluate unbudgetedSteps ctx fun arg
-                    Nothing  -> throwingWithCause _MachineError (MissingCaseBranch i) Nothing
-                Just _ -> throwingWithCause _MachineError NonTagScrutinized Nothing
-                Nothing -> throwingWithCause _MachineError MissingCaseScrutinee Nothing
+    returnCek !unbudgetedSteps (FrameCases caseEnv cs ctx) e = do
+        case e of
+            VTag i arg argEnv -> case cs ^? ix i of
+                Just c  -> computeCek unbudgetedSteps (FrameApplyArg argEnv arg ctx) caseEnv c
+                Nothing -> throwingWithCause _MachineError (MissingCaseBranch i) Nothing
+            _ -> throwingWithCause _MachineError NonTagScrutinized Nothing
 
     -- | @force@ a term and proceed.
     -- If v is a delay then compute the body of v;
