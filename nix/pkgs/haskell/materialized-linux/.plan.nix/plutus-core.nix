@@ -387,6 +387,7 @@
             (hsPkgs."prettyprinter" or (errorHandler.buildDepError "prettyprinter"))
             (hsPkgs."text" or (errorHandler.buildDepError "text"))
             (hsPkgs."transformers" or (errorHandler.buildDepError "transformers"))
+            (hsPkgs."megaparsec" or (errorHandler.buildDepError "megaparsec"))
             ];
           buildable = true;
           modules = [ "Common" "Parsers" ];
@@ -409,6 +410,7 @@
             (hsPkgs."split" or (errorHandler.buildDepError "split"))
             (hsPkgs."text" or (errorHandler.buildDepError "text"))
             (hsPkgs."transformers" or (errorHandler.buildDepError "transformers"))
+            (hsPkgs."megaparsec" or (errorHandler.buildDepError "megaparsec"))
             ];
           buildable = true;
           modules = [ "Common" "Parsers" ];
@@ -433,6 +435,7 @@
             (hsPkgs."prettyprinter" or (errorHandler.buildDepError "prettyprinter"))
             (hsPkgs."cassava" or (errorHandler.buildDepError "cassava"))
             (hsPkgs."text" or (errorHandler.buildDepError "text"))
+            (hsPkgs."megaparsec" or (errorHandler.buildDepError "megaparsec"))
             ];
           buildable = true;
           modules = [ "Common" "Parsers" ];
