@@ -477,7 +477,8 @@ executable plc
         optparse-applicative -any,
         prettyprinter -any,
         text -any,
-        transformers -any
+        transformers -any,
+        megaparsec -any
 
 executable uplc
     import: lang
@@ -500,7 +501,8 @@ executable uplc
         prettyprinter -any,
         split -any,
         text -any,
-        transformers -any
+        transformers -any,
+        megaparsec -any
 
 executable pir
     import: lang
