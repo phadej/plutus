@@ -149,10 +149,12 @@ postulate
 {-# FOREIGN GHC import Data.Bifunctor #-}
 
 {-# COMPILE GHC ParseError = type Text.Megaparsec.Error.ParseErrorBundle T.Text PlutusCore.ParseError #-}
-{-# COMPILE GHC parse = first (() <$) . runQuote . runExceptT . parseProgram  #-}
-{-# COMPILE GHC parseU = first (() <$) . runQuote . runExceptT . U.parseProgram  #-}
-{-# COMPILE GHC parseTm = first (() <$) . runQuote. runExceptT . parseTerm  #-}
-{-# COMPILE GHC parseTy = first (() <$) . runQuote . runExceptT . parseType  #-}
+--{-# COMPILE GHC ParseError = type PlutusCore.ParseError #-}
+{-# COMPILE GHC parse = parseProgram  #-}
+{-# COMPILE GHC parseU = U.parseProgram  #-}
+{-# COMPILE GHC parseTm = parseTerm  #-}
+{-# COMPILE GHC parseTy = parseType  #-}
+{-# COMPILE GHC parseTmU = U.parseTerm  #-}
 {-# COMPILE GHC deBruijnify = second (() <$) . runExcept . deBruijnProgram #-}
 {-# COMPILE GHC deBruijnifyTm = second (() <$) . runExcept . deBruijnTerm #-}
 {-# COMPILE GHC deBruijnifyTy = second (() <$) . runExcept . deBruijnTy #-}
@@ -171,7 +173,6 @@ postulate
 {-# COMPILE GHC TermU = type U.Term NamedDeBruijn DefaultUni DefaultFun () #-}
 {-# COMPILE GHC deBruijnifyU = second (() <$) . runExcept . U.deBruijnProgram #-}
 {-# COMPILE GHC deBruijnifyTmU = second (() <$) . runExcept . U.deBruijnTerm #-}
-{-# COMPILE GHC parseTmU = first (() <$) . runQuote. runExceptT . U.parseTerm  #-}
 {-# COMPILE GHC convTmU = U.conv #-}
 {-# COMPILE GHC unconvTmU = U.uconv 0 #-}
 
