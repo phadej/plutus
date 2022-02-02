@@ -524,6 +524,7 @@
             "DeBruijn/Scope"
             "DeBruijn/Spec"
             "DeBruijn/UnDeBruijnify"
+            "DeBruijn/FlatNatWord"
             ];
           hsSourceDirs = [ "untyped-plutus-core/test" ];
           mainPath = [ "Spec.hs" ];
