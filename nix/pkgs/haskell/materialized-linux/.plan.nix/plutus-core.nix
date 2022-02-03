@@ -93,10 +93,6 @@
           (hsPkgs."word-array" or (errorHandler.buildDepError "word-array"))
           (hsPkgs."cardano-crypto-class" or (errorHandler.buildDepError "cardano-crypto-class"))
           ];
-        build-tools = [
-          (hsPkgs.buildPackages.alex.components.exes.alex or (pkgs.buildPackages.alex or (errorHandler.buildToolDepError "alex:alex")))
-          (hsPkgs.buildPackages.happy.components.exes.happy or (pkgs.buildPackages.happy or (errorHandler.buildToolDepError "happy:happy")))
-          ];
         buildable = true;
         modules = [
           "PlutusCore/Analysis/Definitions"
@@ -125,20 +121,6 @@
           "PlutusCore/Default/Universe"
           "PlutusCore/Eq"
           "PlutusCore/Evaluation/Machine/ExBudgetingDefaults"
-<<<<<<< HEAD
-          "PlutusCore/Lexer/Type"
-=======
-          "PlutusCore/Generators/Internal/Denotation"
-          "PlutusCore/Generators/Internal/Dependent"
-          "PlutusCore/Generators/Internal/Entity"
-          "PlutusCore/Generators/Internal/TypeEvalCheck"
-          "PlutusCore/Generators/Internal/TypedBuiltinGen"
-          "PlutusCore/Generators/Internal/Utils"
->>>>>>> 8530bf931 (Re-organzie dirs/files.)
-          "PlutusCore/Parsable"
-          "PlutusCore/Parser/Internal"
-          "PlutusCore/Parser/Lexer"
-          "PlutusCore/Parser/Type"
           "PlutusCore/Parser/ParserCommon"
           "PlutusCore/Pretty/Classic"
           "PlutusCore/Pretty/ConfigName"
@@ -220,7 +202,6 @@
           "PlutusCore/Examples/Everything"
           "PlutusCore/Flat"
           "PlutusCore/FsTree"
-          "PlutusCore/Lexer"
           "PlutusCore/Mark"
           "PlutusCore/MkPlc"
           "PlutusCore/Name"
