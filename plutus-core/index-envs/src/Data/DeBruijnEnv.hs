@@ -23,7 +23,7 @@ class DeBruijnEnv e where
     empty :: e
     -- | Prepend an element to the environment.
     cons :: Element e -> e -> e
-    -- | Lookup an element in the environment.
+    -- | Lookup an element in the environment. Assumed to be **1-indexed**.
     index :: e -> Word64 -> Maybe (Element e)
     {-# INLINABLE unsafeIndex #-}
     -- | Lookup an element in the environment, partially.
@@ -40,7 +40,7 @@ instance DeBruijnEnv (BRAL.RAList a) where
     {-# INLINABLE index #-}
     index = BRAL.safeIndexOne
     {-# INLINABLE unsafeIndex #-}
-    unsafeIndex = BRAL.indexOne
+    unsafeIndex = BRAL.unsafeIndexOne
 
 -- | A sequence implemented by a map from "levels" to values and a counter giving the "current" level.
 data RelativizedMap a = RelativizedMap (IM.IntMap a) {-# UNPACK #-} !Word64
@@ -64,4 +64,5 @@ instance DeBruijnEnv (RAL.RAList  a) where
     {-# INLINABLE cons #-}
     cons = RAL.cons
     {-# INLINABLE index #-}
-    index l w = l RAL.!? fromIntegral w
+    -- RAL is 0-indexed
+    index l w = l RAL.!? fromIntegral (w-1)

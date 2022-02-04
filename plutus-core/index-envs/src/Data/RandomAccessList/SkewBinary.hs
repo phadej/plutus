@@ -5,10 +5,10 @@
 {-# LANGUAGE ViewPatterns    #-}
 module Data.RandomAccessList.SkewBinary
     ( RAList(Cons,Nil)
-    , indexZero
     , safeIndexZero
-    , indexOne
+    , unsafeIndexZero
     , safeIndexOne
+    , unsafeIndexOne
     , Data.RandomAccessList.SkewBinary.null
     , Data.RandomAccessList.SkewBinary.head
     , Data.RandomAccessList.SkewBinary.tail
@@ -88,12 +88,12 @@ tail :: RAList a -> RAList a
 tail = snd. fromMaybe (error "empty RAList") . uncons
 
 -- 0-based
-indexZero :: RAList a -> Word64 -> a
-indexZero Nil _  = error "out of bounds"
-indexZero (BHead w t ts) !i  =
+unsafeIndexZero :: RAList a -> Word64 -> a
+unsafeIndexZero Nil _  = error "out of bounds"
+unsafeIndexZero (BHead w t ts) !i  =
     if i < w
     then indexTree w i t
-    else indexZero ts (i-w)
+    else unsafeIndexZero ts (i-w)
   where
     indexTree :: Word64 -> Word64 -> Tree a -> a
     indexTree 1 0 (Leaf x) = x
@@ -125,12 +125,12 @@ safeIndexZero (BHead w t ts) !i  =
 
 -- 1-based
 -- NOTE: no check if zero 0 index is passed, if 0 is passed it MAY overflow the index
-indexOne :: RAList a -> Word64 -> a
-indexOne Nil _ = error "out of bounds"
-indexOne (BHead w t ts) !i =
+unsafeIndexOne :: RAList a -> Word64 -> a
+unsafeIndexOne Nil _ = error "out of bounds"
+unsafeIndexOne (BHead w t ts) !i =
     if i <= w
     then indexTree w i t
-    else indexOne ts (i-w)
+    else unsafeIndexOne ts (i-w)
   where
     indexTree :: Word64 -> Word64 -> Tree a -> a
     indexTree 1 1 (Leaf x) = x
