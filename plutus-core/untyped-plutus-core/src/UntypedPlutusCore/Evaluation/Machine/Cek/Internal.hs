@@ -75,6 +75,7 @@ import Data.Hashable (Hashable)
 import Data.Kind qualified as GHC
 import Data.Semigroup (stimes)
 import Data.Text (Text)
+import Data.Word
 import Data.Word64Array.Word8 hiding (Index)
 import Prettyprinter
 import Universe
@@ -349,7 +350,6 @@ newtype CekM uni fun s a = CekM
     } deriving newtype (Functor, Applicative, Monad)
 
 -- | The CEK machine-specific 'EvaluationException'.
--- TODO: unparameterize the `name` when we move to direct-debruijn api
 type CekEvaluationException name uni fun =
     EvaluationException CekUserError (MachineError fun) (Term name uni fun ())
 
@@ -437,10 +437,10 @@ dischargeCekValEnv valEnv = go 0
  where
   -- The lamCnt is just a counter that measures how many lambda-abstractions
   -- we have descended in the `go` loop.
-  go :: Word -> Term NamedDeBruijn uni fun () -> Term NamedDeBruijn uni fun ()
+  go :: Word64 -> Term NamedDeBruijn uni fun () -> Term NamedDeBruijn uni fun ()
   go !lamCnt =  \case
     LamAbs ann name body -> LamAbs ann name $ go (lamCnt+1) body
-    var@(Var _ (NamedDeBruijn _ ndbnIx)) -> let ix = coerce ndbnIx :: Word  in
+    var@(Var _ (NamedDeBruijn _ ndbnIx)) -> let ix = coerce ndbnIx :: Word64  in
         if lamCnt >= ix
         -- the index n is less-than-or-equal than the number of lambdas we have descended
         -- this means that n points to a bound variable, so we don't discharge it.

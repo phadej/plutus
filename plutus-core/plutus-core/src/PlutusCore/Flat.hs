@@ -310,12 +310,12 @@ instance Flat Keyword
 instance Flat Special
 
 instance Flat Index where
-    -- encode from word to natural
+    -- encode from word64 to natural
     encode = encode @Natural . fromIntegral
-    -- decode from natural to word
+    -- decode from natural to word64
     decode = fromIntegral @Natural <$> decode
     -- to be exact, we must not let this be generically derived,
-    -- because the `gsize` would derive the size of the underlying Word,
+    -- because the `gsize` would derive the size of the underlying Word64,
     -- whereas we want the size of Natural
     size = sNatural . fromIntegral
 

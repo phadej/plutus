@@ -18,6 +18,7 @@ module Data.RandomAccessList.SkewBinary
 import Data.Bits (unsafeShiftR)
 import Data.List qualified as List (unfoldr)
 import Data.Maybe
+import Data.Word
 import GHC.Exts
 
 -- | βA complete binary tree.
@@ -31,7 +32,7 @@ data Tree a = Leaf a
 -- The trees appear in >=-size order.
 -- Note: this list is strict in its spine, unlike the Prelude list
 data RAList a = BHead
-               {-# UNPACK #-} !Word -- ^ the size of the head tree
+               {-# UNPACK #-} !Word64 -- ^ the size of the head tree
                !(Tree a) -- ^ the head tree
                !(RAList a) -- ^ the tail trees
              | Nil
@@ -87,14 +88,14 @@ tail :: RAList a -> RAList a
 tail = snd. fromMaybe (error "empty RAList") . uncons
 
 -- 0-based
-indexZero :: RAList a -> Word -> a
+indexZero :: RAList a -> Word64 -> a
 indexZero Nil _  = error "out of bounds"
 indexZero (BHead w t ts) !i  =
     if i < w
     then indexTree w i t
     else indexZero ts (i-w)
   where
-    indexTree :: Word -> Word -> Tree a -> a
+    indexTree :: Word64 -> Word64 -> Tree a -> a
     indexTree 1 0 (Leaf x) = x
     indexTree _ _ (Leaf _) = error "out of bounds"
     indexTree _ 0 (Node x _ _) = x
@@ -105,14 +106,14 @@ indexZero (BHead w t ts) !i  =
            else indexTree halfSize (offset - 1 - halfSize) t2
 
 -- 0-based
-safeIndexZero :: RAList a -> Word -> Maybe a
+safeIndexZero :: RAList a -> Word64 -> Maybe a
 safeIndexZero Nil _  = Nothing
 safeIndexZero (BHead w t ts) !i  =
     if i < w
     then indexTree w i t
     else safeIndexZero ts (i-w)
   where
-    indexTree :: Word -> Word -> Tree a -> Maybe a
+    indexTree :: Word64 -> Word64 -> Tree a -> Maybe a
     indexTree 1 0 (Leaf x) = Just x
     indexTree _ _ (Leaf _) = Nothing
     indexTree _ 0 (Node x _ _) = Just x
@@ -124,14 +125,14 @@ safeIndexZero (BHead w t ts) !i  =
 
 -- 1-based
 -- NOTE: no check if zero 0 index is passed, if 0 is passed it MAY overflow the index
-indexOne :: RAList a -> Word -> a
+indexOne :: RAList a -> Word64 -> a
 indexOne Nil _ = error "out of bounds"
 indexOne (BHead w t ts) !i =
     if i <= w
     then indexTree w i t
     else indexOne ts (i-w)
   where
-    indexTree :: Word -> Word -> Tree a -> a
+    indexTree :: Word64 -> Word64 -> Tree a -> a
     indexTree 1 1 (Leaf x) = x
     indexTree _ _ (Leaf _) = error "out of bounds"
     indexTree _ 1 (Node x _ _) = x
@@ -144,14 +145,14 @@ indexOne (BHead w t ts) !i =
 
 -- 1-based
 -- NOTE: no check if zero 0 index is passed, if 0 is passed it MAY overflow the index
-safeIndexOne :: RAList a -> Word -> Maybe a
+safeIndexOne :: RAList a -> Word64 -> Maybe a
 safeIndexOne Nil _ = Nothing
 safeIndexOne (BHead w t ts) !i =
     if i <= w
     then indexTree w i t
     else safeIndexOne ts (i-w)
   where
-    indexTree :: Word -> Word -> Tree a -> Maybe a
+    indexTree :: Word64 -> Word64 -> Tree a -> Maybe a
     indexTree 1 1 (Leaf x) = Just x
     indexTree _ _ (Leaf _) = Nothing
     indexTree _ 1 (Node x _ _) = Just x

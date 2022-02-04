@@ -49,6 +49,7 @@ import Control.Monad.State
 import Data.Bimap qualified as BM
 import Data.Map qualified as M
 import Data.Text qualified as T
+import Data.Word
 import Prettyprinter
 
 import Control.DeepSeq (NFData)
@@ -56,7 +57,7 @@ import ErrorCode
 import GHC.Generics
 
 -- | A relative index used for de Bruijn identifiers.
-newtype Index = Index Word
+newtype Index = Index Word64
     deriving stock Generic
     deriving newtype (Show, Num, Enum, Real, Integral, Eq, Ord, Pretty)
     deriving anyclass NFData

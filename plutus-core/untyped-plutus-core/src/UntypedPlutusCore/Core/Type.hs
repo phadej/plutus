@@ -80,7 +80,6 @@ data Term name uni fun ann
     deriving anyclass (NFData)
 
 -- | A 'Program' is simply a 'Term' coupled with a 'Version' of the core language.
--- | A 'Program' is simply a 'Term' coupled with a 'Version' of the core language.
 data Program name uni fun ann = Program
     { _progAnn  :: ann
     , _progVer  :: TPLC.Version ann

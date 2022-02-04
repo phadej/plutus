@@ -10,6 +10,7 @@ import Data.Kind
 import Data.Maybe (fromJust)
 import Data.RAList qualified as RAL
 import Data.RandomAccessList.SkewBinary qualified as BRAL
+import Data.Word
 
 {-|
 A class for types that can be used to implement a de Bruijn index environment.
@@ -23,10 +24,10 @@ class DeBruijnEnv e where
     -- | Prepend an element to the environment.
     cons :: Element e -> e -> e
     -- | Lookup an element in the environment.
-    index :: e -> Word -> Maybe (Element e)
+    index :: e -> Word64 -> Maybe (Element e)
     {-# INLINABLE unsafeIndex #-}
     -- | Lookup an element in the environment, partially.
-    unsafeIndex :: e -> Word -> Element e
+    unsafeIndex :: e -> Word64 -> Element e
     unsafeIndex e i = fromJust $ index e i
 
 instance DeBruijnEnv (BRAL.RAList a) where
@@ -42,7 +43,7 @@ instance DeBruijnEnv (BRAL.RAList a) where
     unsafeIndex = BRAL.indexOne
 
 -- | A sequence implemented by a map from "levels" to values and a counter giving the "current" level.
-data RelativizedMap a = RelativizedMap (IM.IntMap a) {-# UNPACK #-} !Word
+data RelativizedMap a = RelativizedMap (IM.IntMap a) {-# UNPACK #-} !Word64
     deriving Show
 
 instance DeBruijnEnv (RelativizedMap a) where
