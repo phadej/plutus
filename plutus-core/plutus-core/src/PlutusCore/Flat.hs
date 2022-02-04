@@ -31,6 +31,7 @@ import Data.Word (Word8)
 import Flat
 import Flat.Decoder
 import Flat.Encoder
+import Numeric.Natural
 import Universe
 
 {- Note [Stable encoding of PLC]
@@ -154,20 +155,13 @@ instance (Closed uni, uni `Everywhere` Flat) => Flat (Some (ValueOf uni)) where
     size (Some (ValueOf uni x)) acc = size (SomeTypeIn uni) acc
                                         + bring (Proxy @Flat) uni (size x 0)
 
-instance Flat Unique where
-    encode (Unique i) = eInt i
-    decode = Unique <$> dInt
-    -- There is no Generic instance for Unique,
-    -- so a `size` function cannot be generated.
-    size (Unique i) = sInt i
+deriving newtype instance Flat Unique -- via int
 
 instance Flat Name where
     encode (Name txt u) = encode txt <> encode u
     decode = Name <$> decode <*> decode
 
-instance Flat TyName where
-    encode (TyName n) = encode n
-    decode = TyName <$> decode
+deriving newtype instance Flat TyName -- via Name
 
 instance Flat ann => Flat (Version ann) where
     encode (Version ann n n' n'') = encode ann <> encode n <> encode n' <> encode n''
@@ -315,23 +309,24 @@ instance Flat a => Flat (Token a)
 instance Flat Keyword
 instance Flat Special
 
-deriving newtype instance Flat Index
+instance Flat Index where
+    -- encode from word to natural
+    encode = encode @Natural . fromIntegral
+    -- decode from natural to word
+    decode = fromIntegral @Natural <$> decode
+    -- to be exact, we must not let this be generically derived,
+    -- because the `gsize` would derive the size of the underlying Word,
+    -- whereas we want the size of Natural
+    size = sNatural . fromIntegral
 
-instance Flat DeBruijn where
-    encode (DeBruijn i) = encode i
-    decode = DeBruijn <$> decode
+deriving newtype instance Flat DeBruijn -- via index
+deriving newtype instance Flat TyDeBruijn -- via debruijn
 
 instance Flat NamedDeBruijn where
     encode (NamedDeBruijn txt ix) = encode txt <> encode ix
     decode = NamedDeBruijn <$> decode <*> decode
 
-instance Flat TyDeBruijn where
-    encode (TyDeBruijn n) = encode n
-    decode = TyDeBruijn <$> decode
-
-instance Flat NamedTyDeBruijn where
-    encode (NamedTyDeBruijn n) = encode n
-    decode = NamedTyDeBruijn <$> decode
+deriving newtype instance Flat NamedTyDeBruijn -- via nameddebruijn
 
 instance Flat (Binder DeBruijn) where
     size _ = id -- zero cost
