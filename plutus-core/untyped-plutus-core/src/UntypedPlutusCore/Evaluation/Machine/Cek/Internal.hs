@@ -445,9 +445,13 @@ dischargeCekValEnv valEnv = go 0
         -- the index n is less-than-or-equal than the number of lambdas we have descended
         -- this means that n points to a bound variable, so we don't discharge it.
         then var
-        else
-            -- index relative to (as seen from the point of view of) the environment
-            dischargeCekValue $ Env.unsafeIndex valEnv $ ix - lamCnt
+        else maybe
+               -- var is free, leave it alone
+               var
+               -- var is in the env, discharge its value
+               dischargeCekValue
+               -- index relative to (as seen from the point of view of) the environment
+               (Env.index valEnv $ ix - lamCnt)
     Apply ann fun arg    -> Apply ann (go lamCnt fun) $ go lamCnt arg
     Delay ann term       -> Delay ann $ go lamCnt term
     Force ann term       -> Force ann $ go lamCnt term

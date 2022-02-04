@@ -28,7 +28,7 @@ class DeBruijnEnv e where
     {-# INLINABLE unsafeIndex #-}
     -- | Lookup an element in the environment, partially.
     unsafeIndex :: e -> Word64 -> Element e
-    unsafeIndex e i = fromJust $ index e i
+    unsafeIndex e = fromJust . index e
 
 instance DeBruijnEnv (BRAL.RAList a) where
     type Element (BRAL.RAList a) = a
@@ -38,9 +38,9 @@ instance DeBruijnEnv (BRAL.RAList a) where
     {-# INLINABLE cons #-}
     cons = BRAL.Cons
     {-# INLINABLE index #-}
-    index = BRAL.safeIndexOne
+    index e i = BRAL.safeIndexZero e (i-1)
     {-# INLINABLE unsafeIndex #-}
-    unsafeIndex = BRAL.unsafeIndexOne
+    unsafeIndex e i = BRAL.unsafeIndexZero e (i-1)
 
 -- | A sequence implemented by a map from "levels" to values and a counter giving the "current" level.
 data RelativizedMap a = RelativizedMap (IM.IntMap a) {-# UNPACK #-} !Word64

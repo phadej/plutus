@@ -36,7 +36,7 @@ uplcInfoCommand = plutus uplcHelpText
 data BudgetMode  = Silent
                  | Verbose SomeBudgetMode
 
-data SomeBudgetMode = forall cost. (Eq cost, NFData cost, PrintBudgetState cost, Monoid cost) => SomeBudgetMode (Cek.ExBudgetMode cost PLC.DefaultUni PLC.DefaultFun)
+data SomeBudgetMode = forall cost. (Eq cost, NFData cost, PrintBudgetState cost) => SomeBudgetMode (Cek.ExBudgetMode cost PLC.DefaultUni PLC.DefaultFun)
 
 data EvalOptions = EvalOptions Input Format PrintMode BudgetMode TraceMode Output TimingMode CekModel
 

@@ -20,8 +20,6 @@ prop_null x = not $ B.null $ B.Cons x B.Nil
 prop_cons1 x = B.Cons x hundred /= hundred
 prop_cons2 x xs = B.Cons x xs /= xs
 
-indexPlusOne s w = B.unsafeIndexOne s (w+1)
-
 unit_null1 = not (B.null hundred) @? "list is empty"
 unit_null2 = B.null B.Nil @? "list not empty"
 
@@ -41,26 +39,26 @@ unit_tail4 = (tailN 150 (applyN (B.Cons 0) 100 hundred) == tailN 50 hundred) @? 
 applyN :: (a->a) -> Word64 -> a -> a
 applyN f n = appEndo $ stimes n $ Endo f
 
-unit_ix1 = indexPlusOne hundred 0 == B.head hundred @? "index error"
-unit_ix2 = indexPlusOne (B.Cons 1 (B.Cons 2 B.Nil)) 1 @?= (2 :: Int)
-unit_ix3 = all (\x -> indexPlusOne hundred (x-1) == x) [1..100] @? "index wrong"
-prop_ix1 x y = indexPlusOne (B.Cons x (B.Cons y B.Nil)) 0 == x
-prop_ix2 x y = indexPlusOne (B.Cons x (B.Cons y B.Nil)) 1 == y
+unit_ix1 = B.unsafeIndexZero hundred 0 == B.head hundred @? "index error"
+unit_ix2 = B.unsafeIndexZero (B.Cons 1 (B.Cons 2 B.Nil)) 1 @?= (2 :: Int)
+unit_ix3 = all (\x -> B.unsafeIndexZero hundred (x-1) == x) [1..100] @? "index wrong"
+prop_ix1 x y = B.unsafeIndexZero (B.Cons x (B.Cons y B.Nil)) 0 == x
+prop_ix2 x y = B.unsafeIndexZero (B.Cons x (B.Cons y B.Nil)) 1 == y
 prop_ix3 xs =
     not (B.null xs) ==>
-    indexPlusOne xs 0 == B.head xs
+    B.unsafeIndexZero xs 0 == B.head xs
 
-unit_ixzero1 = indexPlusOne hundred 0 == B.head hundred @? "index error"
-unit_ixzero2 = indexPlusOne (B.Cons 1 (B.Cons 2 B.Nil)) 1 @?= (2 :: Int)
-unit_ixzero3 = all (\x -> indexPlusOne hundred (x-1) == x) [1..100] @? "index wrong"
-prop_ixzero1 x y = indexPlusOne (B.Cons x (B.Cons y B.Nil)) 0 == x
-prop_ixzero2 x y = indexPlusOne (B.Cons x (B.Cons y B.Nil)) 1 == y
+unit_ixzero1 = B.unsafeIndexZero hundred 0 == B.head hundred @? "index error"
+unit_ixzero2 = B.unsafeIndexZero (B.Cons 1 (B.Cons 2 B.Nil)) 1 @?= (2 :: Int)
+unit_ixzero3 = all (\x -> B.unsafeIndexZero hundred (x-1) == x) [1..100] @? "index wrong"
+prop_ixzero1 x y = B.unsafeIndexZero (B.Cons x (B.Cons y B.Nil)) 0 == x
+prop_ixzero2 x y = B.unsafeIndexZero (B.Cons x (B.Cons y B.Nil)) 1 == y
 prop_ixzero3 xs =
     not (B.null xs) ==>
-    indexPlusOne xs 0 == B.head xs
+    B.unsafeIndexZero xs 0 == B.head xs
 
-prop_fail1 (NonZero i) = total $ indexPlusOne (applyN (B.Cons ()) i B.Nil) i
-prop_fail2 (NonZero i) = total $ indexPlusOne (B.Nil :: B.RAList ()) i
+prop_fail1 (NonZero i) = total $ B.unsafeIndexZero (applyN (B.Cons ()) i B.Nil) i
+prop_fail2 (NonZero i) = total $ B.unsafeIndexZero (B.Nil :: B.RAList ()) i
 
 prop_constail :: Eq a => Word64 -> Word64 -> a -> B.RAList a -> Bool
 prop_constail reps skips x xs =

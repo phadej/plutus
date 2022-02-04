@@ -49,7 +49,6 @@ module UntypedPlutusCore.Evaluation.Machine.Cek
     , readKnownCek
     , Hashable
     , PrettyUni
-    , unDeBruijnResult
     )
 where
 
@@ -88,11 +87,12 @@ allow one to specify an 'ExBudgetMode'. I.e. such functions are only for fully e
 (and possibly returning logs). See also haddocks of 'enormousBudget'.
 -}
 
--- | Evaluate a term using the CEK machine with logging enabled and keep track of costing.
--- A wrapper around the internal runCek to debruijn input and undebruijn output.
--- TODO: remove once we expose a direct debruijn api.
+{-| Evaluate a term using the CEK machine with logging enabled and keep track of costing.
+A wrapper around the internal runCek to debruijn input and undebruijn output.
+*THIS FUNCTION IS PARTIAL if the input term contains free variables*
+-}
 runCek
-    :: ( uni `Everywhere` ExMemoryUsage, Ix fun, PrettyUni uni fun, Monoid cost)
+    :: (uni `Everywhere` ExMemoryUsage, Ix fun, PrettyUni uni fun)
     => MachineParameters CekMachineCosts CekValue uni fun
     -> ExBudgetMode cost uni fun
     -> EmitterMode uni fun
@@ -101,37 +101,45 @@ runCek
 runCek params mode emitMode term =
     -- translating input
     case runExcept @FreeVariableError $ deBruijnTerm term of
-        Left _ -> (error "freevarI", mempty, mempty)
+        Left fvError -> throw fvError
         Right dbt -> do
             -- Don't use 'let': https://github.com/input-output-hk/plutus/issues/3876
             case runCekDeBruijn params mode emitMode dbt of
                 -- translating back the output
-                (res, cost', emit) -> (unDeBruijnResult res, cost', emit)
+                (res, cost', logs) -> (unDeBruijnResult res, cost', logs)
+  where
+    -- *GRACEFULLY* undebruijnifies: a) the error-cause-term (if it exists) or b) the success value-term.
+    -- 'Graceful' means that the (a) && (b) undebruijnifications do not throw an error upon a free variable encounter.
+    unDeBruijnResult :: Either (CekEvaluationException NamedDeBruijn uni fun) (Term NamedDeBruijn uni fun ())
+                     -> Either (CekEvaluationException Name uni fun) (Term Name uni fun ())
+    unDeBruijnResult = bimap (fmap gracefulUnDeBruijn) gracefulUnDeBruijn
+
+    -- free debruijn indices will be turned to free, consistent uniques
+    gracefulUnDeBruijn :: Term NamedDeBruijn uni fun () -> Term Name uni fun ()
+    gracefulUnDeBruijn t = runQuote
+                           . flip evalStateT mempty
+                           $ unDeBruijnTermWith freeIndexAsConsistentLevel t
 
 -- | Evaluate a term using the CEK machine with logging disabled and keep track of costing.
+-- *THIS FUNCTION IS PARTIAL if the input term contains free variables*
 runCekNoEmit
-    :: ( uni `Everywhere` ExMemoryUsage, Ix fun, PrettyUni uni fun, Monoid cost)
+    :: (uni `Everywhere` ExMemoryUsage, Ix fun, PrettyUni uni fun)
     => MachineParameters CekMachineCosts CekValue uni fun
     -> ExBudgetMode cost uni fun
     -> Term Name uni fun ()
     -> (Either (CekEvaluationException Name uni fun) (Term Name uni fun ()), cost)
-runCekNoEmit params mode term =
-    -- translating input
-    case runExcept @FreeVariableError $ deBruijnTerm term of
-        Left _ -> (error "freevarI", mempty)
-        Right dbt -> do
-            -- Don't use 'let': https://github.com/input-output-hk/plutus/issues/3876
-            case runCekDeBruijn params mode noEmitter dbt of
-                -- translating back the output
-                (res, cost', _) -> (unDeBruijnResult res, cost')
+runCekNoEmit params mode =
+    -- throw away the logs
+    (\(res, cost, _logs) -> (res, cost)) . runCek params mode noEmitter
 
--- | Unsafely evaluate a term using the CEK machine with logging disabled and keep track of costing.
--- May throw a 'CekMachineException'.
+{-| Unsafely evaluate a term using the CEK machine with logging disabled and keep track of costing.
+May throw a 'CekMachineException'.
+*THIS FUNCTION IS PARTIAL if the input term contains free variables*
+-}
 unsafeRunCekNoEmit
     :: ( GShow uni, Typeable uni
        , Closed uni, uni `EverywhereAll` '[ExMemoryUsage, PrettyConst]
        , Ix fun, Pretty fun, Typeable fun
-       , Monoid cost
        )
     => MachineParameters CekMachineCosts CekValue uni fun
     -> ExBudgetMode cost uni fun
@@ -142,23 +150,19 @@ unsafeRunCekNoEmit params mode =
     (\(e, l) -> (unsafeExtractEvaluationResult e, l)) . runCekNoEmit params mode
 
 -- | Evaluate a term using the CEK machine with logging enabled.
+-- *THIS FUNCTION IS PARTIAL if the input term contains free variables*
 evaluateCek
     :: ( uni `Everywhere` ExMemoryUsage, Ix fun, PrettyUni uni fun)
     => EmitterMode uni fun
     -> MachineParameters CekMachineCosts CekValue uni fun
     -> Term Name uni fun ()
     -> (Either (CekEvaluationException Name uni fun) (Term Name uni fun ()), [Text])
-evaluateCek emitMode params term =
-    -- translating input
-    case runExcept @FreeVariableError $ deBruijnTerm term of
-        Left _ -> (error "freevarI", mempty)
-        Right dbt ->
-            -- Don't use 'let': https://github.com/input-output-hk/plutus/issues/3876
-            case runCekDeBruijn params restrictingEnormous emitMode dbt of
-                -- translating back the output
-                (res, _, logs) -> (unDeBruijnResult res, logs)
+evaluateCek emitMode params =
+    -- throw away the cost
+    (\(res, _cost, logs) -> (res, logs)) . runCek params restrictingEnormous emitMode
 
 -- | Evaluate a term using the CEK machine with logging disabled.
+-- *THIS FUNCTION IS PARTIAL if the input term contains free variables*
 evaluateCekNoEmit
     :: ( uni `Everywhere` ExMemoryUsage, Ix fun, PrettyUni uni fun)
     => MachineParameters CekMachineCosts CekValue uni fun
@@ -167,6 +171,7 @@ evaluateCekNoEmit
 evaluateCekNoEmit params = fst . runCekNoEmit params restrictingEnormous
 
 -- | Evaluate a term using the CEK machine with logging enabled. May throw a 'CekMachineException'.
+-- *THIS FUNCTION IS PARTIAL if the input term contains free variables*
 unsafeEvaluateCek
     :: ( GShow uni, Typeable uni
        , Closed uni, uni `EverywhereAll` '[ExMemoryUsage, PrettyConst]
@@ -181,6 +186,7 @@ unsafeEvaluateCek emitTime params =
     (\(e, l) -> (unsafeExtractEvaluationResult e, l)) . evaluateCek emitTime params
 
 -- | Evaluate a term using the CEK machine with logging disabled. May throw a 'CekMachineException'.
+-- *THIS FUNCTION IS PARTIAL if the input term contains free variables*
 unsafeEvaluateCekNoEmit
     :: ( GShow uni, Typeable uni
        , Closed uni, uni `EverywhereAll` '[ExMemoryUsage, PrettyConst]
@@ -192,6 +198,7 @@ unsafeEvaluateCekNoEmit
 unsafeEvaluateCekNoEmit params = unsafeExtractEvaluationResult . evaluateCekNoEmit params
 
 -- | Unlift a value using the CEK machine.
+-- *THIS FUNCTION IS PARTIAL if the input term contains free variables*
 readKnownCek
     :: ( uni `Everywhere` ExMemoryUsage
        , KnownType (Term Name uni fun ()) a
@@ -201,18 +208,3 @@ readKnownCek
     -> Term Name uni fun ()
     -> Either (CekEvaluationException Name uni fun) a
 readKnownCek params = evaluateCekNoEmit params >=> readKnownSelf
-
--- | Temporary wrapper for keeping tests the same
--- *GRACEFULLY* undebruijnifies: a) the error-cause-term (if it exists) or b) the success value-term.
--- 'Graceful' means that the (a) && (b) undebruijnifications do not throw an error upon a free variable encounter.
--- TODO: remove when we have direct debruijn api
-unDeBruijnResult :: Either (CekEvaluationException NamedDeBruijn uni fun) (Term NamedDeBruijn uni fun ())
-                 -> Either (CekEvaluationException Name uni fun) (Term Name uni fun ())
-unDeBruijnResult = bimap (fmap gracefulUnDeBruijn) gracefulUnDeBruijn
-  where
-    -- free debruijn indices will be turned to free, consistent uniques
-    gracefulUnDeBruijn :: Term NamedDeBruijn uni fun () -> Term Name uni fun ()
-    gracefulUnDeBruijn t = runQuote
-                         . flip evalStateT mempty
-                         $ unDeBruijnTermWith freeIndexAsConsistentLevel t
-
