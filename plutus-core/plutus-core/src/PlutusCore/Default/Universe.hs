@@ -187,14 +187,16 @@ instance KnownBuiltinTypeAst DefaultUni [a]           => KnownTypeAst DefaultUni
 instance KnownBuiltinTypeAst DefaultUni (a, b)        => KnownTypeAst DefaultUni (a, b)
 instance KnownBuiltinTypeAst DefaultUni Data          => KnownTypeAst DefaultUni Data
 
-instance KnownBuiltinTypeIn DefaultUni term Integer       => KnownTypeIn DefaultUni term Integer
-instance KnownBuiltinTypeIn DefaultUni term BS.ByteString => KnownTypeIn DefaultUni term BS.ByteString
-instance KnownBuiltinTypeIn DefaultUni term Text.Text     => KnownTypeIn DefaultUni term Text.Text
-instance KnownBuiltinTypeIn DefaultUni term ()            => KnownTypeIn DefaultUni term ()
-instance KnownBuiltinTypeIn DefaultUni term Bool          => KnownTypeIn DefaultUni term Bool
-instance KnownBuiltinTypeIn DefaultUni term [a]           => KnownTypeIn DefaultUni term [a]
-instance KnownBuiltinTypeIn DefaultUni term (a, b)        => KnownTypeIn DefaultUni term (a, b)
-instance KnownBuiltinTypeIn DefaultUni term Data          => KnownTypeIn DefaultUni term Data
+instance HasConstantIn DefaultUni term => KnownTypeIn DefaultUni term Integer
+instance HasConstantIn DefaultUni term => KnownTypeIn DefaultUni term BS.ByteString
+instance HasConstantIn DefaultUni term => KnownTypeIn DefaultUni term Text.Text
+instance HasConstantIn DefaultUni term => KnownTypeIn DefaultUni term ()
+instance HasConstantIn DefaultUni term => KnownTypeIn DefaultUni term Bool
+instance HasConstantIn DefaultUni term => KnownTypeIn DefaultUni term Data
+instance (HasConstantIn DefaultUni term, DefaultUni `Contains` [a])    =>
+    KnownTypeIn DefaultUni term [a]
+instance (HasConstantIn DefaultUni term, DefaultUni `Contains` (a, b)) =>
+    KnownTypeIn DefaultUni term (a, b)
 
 -- If this tells you a 'KnownTypeIn' instance is missing, add it right above, following the pattern
 -- (you'll also need to add a 'KnownTypeAst' instance as well).

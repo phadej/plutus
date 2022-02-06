@@ -151,7 +151,7 @@ readKnownConstant
 readKnownConstant mayCause val = asConstant mayCause val >>= oneShot \case
     Some (ValueOf uniAct x) -> do
         let uniExp = knownUni @_ @(UniOf val) @a
-        case uniAct `geq` uniExp of
+        case uniExp `geq` uniAct of
             Just Refl -> pure x
             Nothing   -> do
                 let err = fromString $ concat
